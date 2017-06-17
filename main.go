@@ -60,7 +60,7 @@ func main() {
 // handles request at /home - a small page that let's you know what you can do in this app. Usually the first.
 // page a user sees.
 func handleHome(w http.ResponseWriter, _ *http.Request) {
-	var authUrl = client.OAuth2Config(env.Getenv("HYDRA_CLIENT_CALLBACK", "http://localhost:4445/callback"), "offline", "openid").AuthCodeURL(state) + "&nonce=" + state
+	var authUrl = client.OAuth2Config("http://localhost:4445/callback", "offline", "openid").AuthCodeURL(state) + "&nonce=" + state
 	renderTemplate(w, "home.html", authUrl)
 }
 
@@ -195,7 +195,7 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
 	// in the real world you should check the state query parameter, but this is omitted for brevity reasons.
 
 	// Exchange the access code for an access (and optionally) a refresh token
-	token, err := client.OAuth2Config("http://localhost:4445/callback").Exchange(context.Background(), r.URL.Query().Get("code"))
+	token, err := client.OAuth2Config(env.Getenv("HYDRA_CLIENT_CALLBACK", "http://localhost:4445/callback")).Exchange(context.Background(), r.URL.Query().Get("code"))
 	if err != nil {
 		http.Error(w, errors.Wrap(err, "Could not exhange token").Error(), http.StatusBadRequest)
 		return
