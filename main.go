@@ -60,7 +60,7 @@ func main() {
 // handles request at /home - a small page that let's you know what you can do in this app. Usually the first.
 // page a user sees.
 func handleHome(w http.ResponseWriter, _ *http.Request) {
-	var authUrl = client.OAuth2Config("http://localhost:4445/callback", "offline", "openid").AuthCodeURL(state) + "&nonce=" + state
+	var authUrl = client.OAuth2Config(env.Getenv("HYDRA_CLIENT_CALLBACK", "http://localhost:4445/callback"), "offline", "openid").AuthCodeURL(state) + "&nonce=" + state
 	renderTemplate(w, "home.html", authUrl)
 }
 
