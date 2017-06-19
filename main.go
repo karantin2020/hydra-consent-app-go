@@ -43,6 +43,7 @@ func main() {
 	// Set up a router and some routes
 	r := mux.NewRouter()
 	r.HandleFunc("/", handleHome)
+	r.HandleFunc("/auth", handleAuth)
 	r.HandleFunc("/consent", handleConsent)
 	r.HandleFunc("/login", handleLogin)
 	r.HandleFunc("/callback", handleCallback)
@@ -60,8 +61,14 @@ func main() {
 // handles request at /home - a small page that let's you know what you can do in this app. Usually the first.
 // page a user sees.
 func handleHome(w http.ResponseWriter, _ *http.Request) {
+	// var authUrl = client.OAuth2Config("http://localhost:4445/callback", "offline", "openid").AuthCodeURL(state) + "&nonce=" + state
+	renderTemplate(w, "home.html", "/auth")
+}
+
+// handles auth request
+func handleAuth(w http.ResponseWriter, _ *http.Request) {
 	var authUrl = client.OAuth2Config("http://localhost:4445/callback", "offline", "openid").AuthCodeURL(state) + "&nonce=" + state
-	renderTemplate(w, "home.html", authUrl)
+	http.Redirect(w, r, authUrl, http.StatusPermanentRedirect)
 }
 
 // After pressing "click here", the Authorize Code flow is performed and the user is redirected to Hydra. Next, Hydra
