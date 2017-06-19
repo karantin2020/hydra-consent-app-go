@@ -13,6 +13,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"sync"
 )
 
 // This store will be used to save user authentication
@@ -27,6 +28,64 @@ var client *sdk.Client
 // A state for performing the OAuth 2.0 flow. This is usually not part of a consent app, but in order for the demo
 // to make sense, it performs the OAuth 2.0 authorize code flow.
 var state = "demostatedemostatedemo"
+
+type User struct {
+	mutex  sync.Mutex
+	Name   string
+	Secret string
+	*oauth2.Token
+	Authenticated bool
+}
+
+func (u *User) SetName(name string) {
+	u.mutex.Lock()
+	u.Name = name
+	u.mutex.Unlock()
+}
+
+func (u *User) GetName() string {
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
+	return u.Name
+}
+
+func (u *User) SetPassword(password string) {
+	u.mutex.Lock()
+	u.Secret = password
+	u.mutex.Unlock()
+}
+
+func (u *User) GetPassword() string {
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
+	return u.Secret
+}
+
+func (u *User) SetAuth(auth bool) {
+	u.mutex.Lock()
+	u.Authenticated = auth
+	u.mutex.Unlock()
+}
+
+func (u *User) GetAuth() bool {
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
+	return u.Authenticated
+}
+
+func (u *User) SetToken(token *oauth2.Token) {
+	u.mutex.Lock()
+	u.Token = token
+	u.mutex.Unlock()
+}
+
+func (u *User) GetToken() *oauth2.Token {
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
+	return u.Token
+}
+
+var user User
 
 func main() {
 	var err error
@@ -61,8 +120,22 @@ func main() {
 // handles request at /home - a small page that let's you know what you can do in this app. Usually the first.
 // page a user sees.
 func handleHome(w http.ResponseWriter, _ *http.Request) {
-	// var authUrl = client.OAuth2Config("http://localhost:4445/callback", "offline", "openid").AuthCodeURL(state) + "&nonce=" + state
-	renderTemplate(w, "home.html", "/auth")
+
+	if user.GetAuth() {
+		defer user.SetAuth(false)
+		token := user.GetToken()
+		// Render the output
+		renderTemplate(w, "callback.html", struct {
+			*oauth2.Token
+			IDToken interface{}
+		}{
+			Token:   token
+			IDToken: token.Extra("id_token"),
+		})
+	} else {
+		// var authUrl = client.OAuth2Config("http://localhost:4445/callback", "offline", "openid").AuthCodeURL(state) + "&nonce=" + state
+		renderTemplate(w, "home.html", "/auth")
+	}
 }
 
 // handles auth request
@@ -174,6 +247,9 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		user.SetName("buzz")
+		user.SetPassword("lightyear")
+
 		// Let's create a session where we store the user id. We can ignore errors from the session store
 		// as it will always return a session!
 		session, _ := store.Get(r, sessionName)
@@ -208,14 +284,17 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Render the output
-	renderTemplate(w, "callback.html", struct {
-		*oauth2.Token
-		IDToken interface{}
-	}{
-		Token:   token,
-		IDToken: token.Extra("id_token"),
-	})
+	user.SetAuth(true)
+	http.Redirect(w, r, "http://localhost:4445/", http.StatusPermanentRedirect)
+
+	// // Render the output
+	// renderTemplate(w, "callback.html", struct {
+	// 	*oauth2.Token
+	// 	IDToken interface{}
+	// }{
+	// 	Token:   token,
+	// 	IDToken: token.Extra("id_token"),
+	// })
 }
 
 // authenticated checks if our cookie store has a user stored and returns the user's name, or an empty string if he is not authenticated.
