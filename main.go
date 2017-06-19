@@ -66,7 +66,7 @@ func handleHome(w http.ResponseWriter, _ *http.Request) {
 }
 
 // handles auth request
-func handleAuth(w http.ResponseWriter, _ *http.Request) {
+func handleAuth(w http.ResponseWriter, r *http.Request) {
 	var authUrl = client.OAuth2Config("http://localhost:4445/callback", "offline", "openid").AuthCodeURL(state) + "&nonce=" + state
 	http.Redirect(w, r, authUrl, http.StatusPermanentRedirect)
 }
