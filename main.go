@@ -285,6 +285,7 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.SetAuth(true)
+	user.SetToken(token)
 	http.Redirect(w, r, "http://localhost:4445/", http.StatusPermanentRedirect)
 
 	// // Render the output
