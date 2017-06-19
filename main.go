@@ -129,7 +129,7 @@ func handleHome(w http.ResponseWriter, _ *http.Request) {
 			*oauth2.Token
 			IDToken interface{}
 		}{
-			Token:   token
+			Token:   token,
 			IDToken: token.Extra("id_token"),
 		})
 	} else {
