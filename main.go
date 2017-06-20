@@ -277,10 +277,18 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 func handleCallback(w http.ResponseWriter, r *http.Request) {
 	// in the real world you should check the state query parameter, but this is omitted for brevity reasons.
 
+	code := r.URL.Query().Get("code")
 	// Exchange the access code for an access (and optionally) a refresh token
-	token, err := client.OAuth2Config("http://localhost:4445/callback").Exchange(context.Background(), r.URL.Query().Get("code"))
+	token, err := client.OAuth2Config("http://localhost:4445/callback").Exchange(context.Background(), code)
 	if err != nil {
-		http.Error(w, errors.Wrap(err, "Could not exhange token").Error(), http.StatusBadRequest)
+		http.Error(w, errors.Wrap(err, "Could not exhange token first time").Error(), http.StatusBadRequest)
+		return
+	}
+	
+	// Exchange the access code for an access (and optionally) a refresh token
+	token, err = client.OAuth2Config("http://localhost:4445/callback").Exchange(context.Background(), code)
+	if err != nil {
+		http.Error(w, errors.Wrap(err, "Could not exhange token second time").Error(), http.StatusBadRequest)
 		return
 	}
 
